@@ -217,6 +217,11 @@ public class MonetaryFormatTest {
     }
 
     @Test
+    public void standardSymbol() throws Exception {
+        assertEquals(MonetaryFormat.SYMBOL_BTC + " 0.00", new MonetaryFormat(true).format(Coin.ZERO).toString());
+    }
+
+    @Test
     public void customCode() throws Exception {
         assertEquals("dBTC 0", MonetaryFormat.UBTC.code(1, "dBTC").shift(1).format(Coin.ZERO).toString());
     }
@@ -346,5 +351,19 @@ public class MonetaryFormatTest {
     @Test
     public void fiat() throws Exception {
         assertEquals(ONE_EURO, NO_CODE.parseFiat("EUR", "1"));
+    }
+
+    @Test
+    public void testEquals() {
+        MonetaryFormat mf1 = new MonetaryFormat(true);
+        MonetaryFormat mf2 = new MonetaryFormat(true);
+        assertEquals(mf1, mf2);
+    }
+
+    @Test
+    public void testHashCode() {
+        MonetaryFormat mf1 = new MonetaryFormat(true);
+        MonetaryFormat mf2 = new MonetaryFormat(true);
+        assertEquals(mf1.hashCode(), mf2.hashCode());
     }
 }

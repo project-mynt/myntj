@@ -3,14 +3,12 @@ apply plugin: 'com.google.protobuf'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
 
-version = '0.15-SNAPSHOT'
-archivesBaseName = 'bitcoinj-core'
-eclipse.project.name = 'bitcoinj-core'
+version = '0.16-SNAPSHOT'
 
 dependencies {
     compile 'org.bouncycastle:bcprov-jdk15on:1.60'
     implementation 'com.lambdaworks:scrypt:1.4.0'
-    implementation 'com.google.guava:guava:27.0.1-android'
+    implementation 'com.google.guava:guava:27.1-android'
     compile 'com.google.protobuf:protobuf-java:3.6.1'
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
     implementation 'org.slf4j:slf4j-api:1.7.25'
@@ -36,10 +34,23 @@ protobuf {
 }
 
 test {
+    exclude 'org/bitcoinj/core/PeerTest*'
+    exclude 'org/bitcoinj/core/TransactionBroadcastTest*'
     exclude 'org/bitcoinj/net/NetworkAbstractionTests*'
+    exclude 'org/bitcoinj/net/discovery/DnsDiscoveryTest*'
+    exclude 'org/bitcoinj/protocols/channels/ChannelConnectionTest*'
     testLogging {
         events "failed"
         exceptionFormat "full"
+    }
+}
+
+ext.moduleName = 'org.bitcoinj.core'
+
+jar {
+    inputs.property("moduleName", moduleName)
+    manifest {
+        attributes 'Automatic-Module-Name': moduleName
     }
 }
 

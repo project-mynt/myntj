@@ -502,12 +502,14 @@ public class KeyChainGroup implements KeyBag {
     @Override
     @Nullable
     public RedeemData findRedeemDataFromScriptHash(byte[] scriptHash) {
-        // Iterate in reverse order, since the active keychain is the one most likely to have the hit
-        for (Iterator<DeterministicKeyChain> iter = chains.descendingIterator() ; iter.hasNext() ; ) {
-            DeterministicKeyChain chain = iter.next();
-            RedeemData redeemData = chain.findRedeemDataByScriptHash(ByteString.copyFrom(scriptHash));
-            if (redeemData != null)
-                return redeemData;
+        if (chains != null) {
+            // Iterate in reverse order, since the active keychain is the one most likely to have the hit
+            for (Iterator<DeterministicKeyChain> iter = chains.descendingIterator(); iter.hasNext();) {
+                DeterministicKeyChain chain = iter.next();
+                RedeemData redeemData = chain.findRedeemDataByScriptHash(ByteString.copyFrom(scriptHash));
+                if (redeemData != null)
+                    return redeemData;
+            }
         }
         return null;
     }
@@ -665,17 +667,22 @@ public class KeyChainGroup implements KeyBag {
     public void encrypt(KeyCrypter keyCrypter, KeyParameter aesKey) {
         checkNotNull(keyCrypter);
         checkNotNull(aesKey);
-        checkState(chains == null || !chains.isEmpty() || basic.numKeys() != 0, "can't encrypt entirely empty wallet");
-        // This code must be exception safe.
+        checkState((chains != null && !chains.isEmpty()) || basic.numKeys() != 0, "can't encrypt entirely empty wallet");
+
         BasicKeyChain newBasic = basic.toEncrypted(keyCrypter, aesKey);
         List<DeterministicKeyChain> newChains = new ArrayList<>();
-        if (chains != null)
+        if (chains != null) {
             for (DeterministicKeyChain chain : chains)
                 newChains.add(chain.toEncrypted(keyCrypter, aesKey));
+        }
+
+        // Code below this point must be exception safe.
         this.keyCrypter = keyCrypter;
-        basic = newBasic;
-        this.chains.clear();
-        this.chains.addAll(newChains);
+        this.basic = newBasic;
+        if (chains != null) {
+            this.chains.clear();
+            this.chains.addAll(newChains);
+        }
     }
 
     /**
@@ -685,18 +692,20 @@ public class KeyChainGroup implements KeyBag {
      * @throws org.bitcoinj.crypto.KeyCrypterException Thrown if the wallet decryption fails for some reason, leaving the group unchanged.
      */
     public void decrypt(KeyParameter aesKey) {
-        // This code must be exception safe.
         checkNotNull(aesKey);
+
         BasicKeyChain newBasic = basic.toDecrypted(aesKey);
-        List<DeterministicKeyChain> newChains = new ArrayList<>(chains.size());
-        if (chains != null)
+        if (chains != null) {
+            List<DeterministicKeyChain> newChains = new ArrayList<>(chains.size());
             for (DeterministicKeyChain chain : chains)
                 newChains.add(chain.toDecrypted(aesKey));
 
+            // Code below this point must be exception safe.
+            this.chains.clear();
+            this.chains.addAll(newChains);
+        }
+        this.basic = newBasic;
         this.keyCrypter = null;
-        basic = newBasic;
-        chains.clear();
-        chains.addAll(newChains);
     }
 
     /** Returns true if the group is encrypted. */

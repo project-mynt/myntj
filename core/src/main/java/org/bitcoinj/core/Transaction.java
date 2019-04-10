@@ -34,8 +34,6 @@ import org.bitcoinj.wallet.WalletTransaction.Pool;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -75,7 +73,7 @@ public class Transaction extends ChildMessage {
         public int compare(final Transaction tx1, final Transaction tx2) {
             final long time1 = tx1.getUpdateTime().getTime();
             final long time2 = tx2.getUpdateTime().getTime();
-            final int updateTimeComparison = -(Longs.compare(time1, time2));
+            final int updateTimeComparison = -(Long.compare(time1, time2));
             //If time1==time2, compare by tx hash to make comparator consistent with equals
             return updateTimeComparison != 0 ? updateTimeComparison : tx1.getTxId().compareTo(tx2.getTxId());
         }
@@ -90,7 +88,7 @@ public class Transaction extends ChildMessage {
             final TransactionConfidence confidence2 = tx2.getConfidence();
             final int height2 = confidence2.getConfidenceType() == ConfidenceType.BUILDING
                     ? confidence2.getAppearedAtChainHeight() : Block.BLOCK_HEIGHT_UNKNOWN;
-            final int heightComparison = -(Ints.compare(height1, height2));
+            final int heightComparison = -(Integer.compare(height1, height2));
             //If height1==height2, compare by tx hash to make comparator consistent with equals
             return heightComparison != 0 ? heightComparison : tx1.getTxId().compareTo(tx2.getTxId());
         }
@@ -803,15 +801,18 @@ public class Transaction extends ChildMessage {
                     }
                     final TransactionOutPoint outpoint = in.getOutpoint();
                     final TransactionOutput connectedOutput = outpoint.getConnectedOutput();
+                    s.append(indent).append("        ");
                     if (connectedOutput != null) {
                         Script scriptPubKey = connectedOutput.getScriptPubKey();
                         ScriptType scriptType = scriptPubKey.getScriptType();
-                        s.append(indent).append("        ");
                         if (scriptType != null)
-                            s.append(scriptType).append(" addr:").append(scriptPubKey.getToAddress(params))
-                                    .append("  ");
-                        s.append("outpoint:").append(outpoint).append('\n');
+                            s.append(scriptType).append(" addr:").append(scriptPubKey.getToAddress(params));
+                        else
+                            s.append("unknown script type");
+                    } else {
+                        s.append("unconnected");
                     }
+                    s.append("  outpoint:").append(outpoint).append('\n');
                     if (in.hasSequence()) {
                         s.append(indent).append("        sequence:").append(Long.toHexString(in.getSequenceNumber()));
                         if (in.isOptInFullRBF())
@@ -838,9 +839,12 @@ public class Transaction extends ChildMessage {
                 s.append("  ");
                 s.append(out.getValue().toFriendlyString());
                 s.append('\n');
+                s.append(indent).append("        ");
                 ScriptType scriptType = scriptPubKey.getScriptType();
                 if (scriptType != null)
-                    s.append(indent).append("        " + scriptType + " addr:" + scriptPubKey.getToAddress(params));
+                    s.append(scriptType).append(" addr:").append(scriptPubKey.getToAddress(params));
+                else
+                    s.append("unknown script type");
                 if (!out.isAvailableForSpending()) {
                     s.append("  spent");
                     final TransactionInput spentBy = out.getSpentBy();
@@ -1749,6 +1753,7 @@ public class Transaction extends ChildMessage {
     /**
      * Returns the transaction {@link #memo}.
      */
+    @Nullable
     public String getMemo() {
         return memo;
     }
